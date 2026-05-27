@@ -137,6 +137,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .img-placeholder{width:40px;height:34px;border-radius:6px;border:1.5px dashed var(--gray2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--gray3)}
 .img-placeholder:hover{border-color:var(--blue);background:#eaf4f9}
 .img-placeholder svg{width:13px;height:13px;stroke:var(--gray);stroke-width:2}
+.img-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--red);border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,0.25);transition:transform .15s}
+.img-del:hover{transform:scale(1.15)}
+.img-del svg{width:9px;height:9px;stroke:#fff;stroke-width:3}
 .chk{width:20px;height:20px;-webkit-appearance:none;border:2px solid var(--gray2);border-radius:5px;background:#fff;cursor:pointer;transition:all .18s;position:relative;display:block;margin:0 auto}
 .chk:checked{background:var(--navy);border-color:var(--navy)}
 .chk:checked::after{content:'';position:absolute;left:5px;top:2px;width:7px;height:11px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(45deg)}
@@ -541,7 +544,8 @@ function renderTable(){
       <td><div class="cpill" style="background:${seg.color}"></div></td>
       <td><div class="img-cell">
         ${hasImg
-          ?`<img class="img-preview" src="${seg.imgUrl}" alt="" onclick="document.getElementById('fup-${i}').click()"/>`
+          ?`<img class="img-preview" src="${seg.imgUrl}" alt="" onclick="document.getElementById('fup-${i}').click()"/>
+            <div class="img-del" onclick="removeImg(${i})" title="Eliminar imagen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg></div>`
           :`<div class="img-placeholder" onclick="document.getElementById('fup-${i}').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>`}
         <input type="file" id="fup-${i}" accept="image/*" style="display:none" onchange="handleImg(${i},this)"/>
       </div></td>
@@ -552,6 +556,15 @@ function renderTable(){
     tbody.appendChild(tr);
   });
   updateProbBar();
+}
+
+function removeImg(idx){
+  segments[idx].imgUrl=null;
+  renderTable();
+  const st=document.getElementById('save-status');
+  st.textContent='Imagen eliminada (recuerda guardar)';
+  st.className='save-status';
+  setTimeout(()=>{st.textContent='';},3000);
 }
 
 async function handleImg(idx,input){
@@ -631,64 +644,106 @@ async function drawWheel(){
     // Content
     ctx.save();ctx.translate(cx,cy);ctx.rotate(angle+slice/2);
     const img=imgs[i];
-    const hasImg=img&&!seg.isSiga&&sliceDeg>=22;
+    const hasImg=img&&!seg.isSiga&&sliceDeg>=18;
 
-    // Draw image thumbnail near outer edge
+    // Adaptive sizes based on slice angle
+    let fs=n<=6?15:n<=8?13:n<=10?11:9;
+    if(sliceDeg<28) fs=Math.max(fs-1,8);
+    if(sliceDeg<20) fs=Math.max(fs-1,7);
+
+    // Image goes near outer edge
     if(hasImg){
-      const iSz=Math.min(sliceDeg<35?12:sliceDeg<50?16:19,19);
-      const iX=r*0.76;
+      const iSz=Math.min(sliceDeg<28?13:sliceDeg<40?17:21,22);
+      const iX=r*0.82;
       ctx.save();ctx.beginPath();ctx.arc(iX,0,iSz,0,2*Math.PI);ctx.clip();
-      ctx.drawImage(img,iX-iSz,-iSz,iSz*2,iSz*2);ctx.restore();
+      ctx.drawImage(img,iX-iSz,-iSz,iSz*2,iSz*2);
+      ctx.restore();
+      // Border around image
+      ctx.beginPath();ctx.arc(iX,0,iSz,0,2*Math.PI);
+      ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1.5;ctx.stroke();
     }
 
-    // Text — always drawn, centered in the slice
-    ctx.rotate(Math.PI/2);
-    ctx.shadowColor='rgba(0,0,0,0.4)';ctx.shadowBlur=3;
-    ctx.fillStyle=seg.isSiga?'rgba(255,255,255,0.65)':'#fff';
+    // Text — drawn RADIALLY (along the slice axis), reading outward from center
+    // After rotation, +X is the radial direction toward the outer edge
+    // Text is written sideways along the radius, NOT tangential to center
 
-    // Font size: adaptive to segment count and slice size
-    let fs=n<=6?13:n<=8?12:n<=10?10:8;
-    if(sliceDeg<30) fs=Math.max(fs-1,7);
-    if(sliceDeg<20) fs=Math.max(fs-1,6);
+    ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=3;
+    ctx.fillStyle=seg.isSiga?'rgba(255,255,255,0.7)':'#fff';
     ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
 
-    // Parse emoji and text separately
+    // Parse emoji and text
     const emojiRx=/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu;
     const raw=seg.label.replace(emojiRx,'').trim();
     const emoji=(seg.label.match(emojiRx)||[])[0]||'';
     const textToDraw=raw||seg.label;
 
-    // Word wrap into max 2 lines
+    // Available radial space for text
+    // From r*0.18 (inner, hub edge) to r*(hasImg?0.66:0.92)
+    const innerEdge=r*0.18;
+    const outerEdge=r*(hasImg?0.66:0.92);
+    const textZone=outerEdge-innerEdge;
+    const textCenter=(innerEdge+outerEdge)/2;
+
+    // Width available perpendicular to radius at the text position
+    // At distance textCenter, the chord width is roughly 2 * textCenter * sin(slice/2)
+    const maxW=2*textCenter*Math.sin(slice/2)*0.85;
+
+    // Word wrap based on actual measurement
+    ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
+    let lines=[];
     const words=textToDraw.split(' ').filter(Boolean);
-    const half=Math.ceil(words.length/2);
-    let lines=words.length<=1?[textToDraw]:[words.slice(0,half).join(' '),words.slice(half).join(' ')].filter(Boolean);
 
-    // Truncate lines that exceed slice width
-    const maxTxtW=r*(sliceDeg<28?0.32:sliceDeg<40?0.38:0.44);
+    if(words.length===0){
+      lines=[textToDraw];
+    } else if(words.length===1){
+      lines=[words[0]];
+    } else {
+      // Try to fit on 2 lines, balanced
+      const half=Math.ceil(words.length/2);
+      const line1=words.slice(0,half).join(' ');
+      const line2=words.slice(half).join(' ');
+      // Check if single line fits
+      const single=words.join(' ');
+      if(ctx.measureText(single).width<=maxW && sliceDeg>=35){
+        lines=[single];
+      } else {
+        lines=[line1,line2];
+      }
+    }
+
+    // Truncate lines that don't fit
     lines=lines.map(l=>{
+      if(ctx.measureText(l).width<=maxW) return l;
       let s=l;
-      while(s.length>2&&ctx.measureText(s).width>maxTxtW) s=s.slice(0,-1);
-      return s!==l?s+'…':s;
-    });
+      while(s.length>1&&ctx.measureText(s+'…').width>maxW) s=s.slice(0,-1);
+      return s+'…';
+    }).filter(Boolean);
 
-    const lh=fs*1.35;
+    const lh=fs*1.25;
     const showEmoji=emoji&&!seg.isSiga&&!hasImg&&sliceDeg>=30;
 
+    // Position text along the radial axis (x = distance from center)
+    // Rotate +90° so text reads "outward" but legibly
+    ctx.rotate(Math.PI/2);
+    // Now +Y (down in local) points outward to the edge; -Y points to center
+    // We want text positioned at "textCenter" distance from origin, along the original radial.
+    // After rotating PI/2, that radial is now along -Y direction.
+
     if(showEmoji){
-      // Emoji on top + text below, all centered together
-      const eSz=fs+3;
-      const totalBlock=eSz+2+lines.length*lh;
-      let y=-totalBlock/2;
+      const eSz=fs+4;
+      const totalBlock=eSz+3+lines.length*lh;
+      // Center the whole block on textCenter; -Y is outward
+      let y=-textCenter-totalBlock/2;
       ctx.font=`${eSz}px serif`;
       ctx.fillText(emoji,0,y+eSz/2);
       y+=eSz+3;
       ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
       lines.forEach(l=>{ctx.fillText(l,0,y+lh/2);y+=lh;});
     } else {
-      // Text only — perfectly centered in slice (no offset)
       const totalH=lines.length*lh;
-      let y=-totalH/2;
+      let y=-textCenter-totalH/2;
       lines.forEach(l=>{ctx.fillText(l,0,y+lh/2);y+=lh;});
     }
 
