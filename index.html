@@ -779,23 +779,29 @@ function spinWheel(){
 
   const slices=segments.map(s=>(s.prob/total)*2*Math.PI);
 
-  // Calculate start angle of winning slice
+  // Calculate start angle of winning slice (offset from segment 0's start)
   let sliceStart=0;
   for(let i=0;i<winIdx;i++) sliceStart+=slices[i];
   const sliceSize=slices[winIdx];
 
-  // Land anywhere inside the slice EXCEPT near the borders (20% buffer each side)
-  // This guarantees the pointer is clearly inside the winner — never on an edge
+  // Pick a random landing point INSIDE the slice (20% buffer from edges)
   const buffer=sliceSize*0.20;
   const landOffset=buffer + Math.random()*(sliceSize - buffer*2);
-  const landAngle=sliceStart + landOffset;
 
-  // Pointer is at -PI/2 (top). We need: currentAngle + landAngle = -PI/2 (mod 2PI)
-  const pointerAt=-Math.PI/2;
-  const desired=pointerAt - landAngle;
-  const fullSpins=(7+Math.floor(Math.random()*4))*2*Math.PI; // 7-10 full spins for suspense
-  const diff=((desired-currentAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
-  const target=currentAngle+fullSpins+diff;
+  // ── ANGLE MATH ──
+  // In drawWheel, segment i starts at angle: (currentAngle - PI/2) + sum(slices[0..i-1])
+  // The pointer is fixed at -PI/2 in canvas coordinates (top).
+  // For the pointer to land at offset `landOffset` inside the winning slice:
+  //   (currentAngle - PI/2) + sliceStart + landOffset = -PI/2  (mod 2PI)
+  //   currentAngle = -(sliceStart + landOffset)  (mod 2PI)
+  const targetMod = -(sliceStart + landOffset);
+
+  // Add full spins for drama, snap to the correct final angle
+  const fullSpins=(7+Math.floor(Math.random()*4))*2*Math.PI;
+  // Normalize the difference between current and target to a positive value [0, 2PI)
+  let diff = (targetMod - currentAngle) % (2*Math.PI);
+  if(diff < 0) diff += 2*Math.PI;
+  const target = currentAngle + fullSpins + diff;
 
   // Longer duration for more suspense
   const dur=5000+Math.random()*2000;
@@ -803,10 +809,9 @@ function spinWheel(){
 
   // Ease: fast start, slow dramatic ending
   function ease(t){
-    // Quartic ease-out with a slight hesitation near the end
-    if(t<0.7) return t/0.7*0.85; // fast phase
+    if(t<0.7) return t/0.7*0.85;
     const t2=(t-0.7)/0.3;
-    return 0.85 + 0.15*(1-Math.pow(1-t2,4)); // slow dramatic landing
+    return 0.85 + 0.15*(1-Math.pow(1-t2,4));
   }
 
   function tick(now){
