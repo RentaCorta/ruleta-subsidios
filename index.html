@@ -345,6 +345,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           Premios y probabilidades
         </div>
+        <div style="font-size:11px;color:var(--gray);margin-bottom:10px;line-height:1.4">
+          Las casillas en la ruleta siempre se ven del mismo tamaño. El <strong style="color:var(--navy)">%</strong> ajusta solo la probabilidad interna de que cada premio sea elegido.
+        </div>
         <table class="stbl">
           <thead>
             <tr>
@@ -634,14 +637,16 @@ async function drawWheel(){
   ctx.imageSmoothingQuality='high';
   const cx=sz/2,cy=sz/2,r=cx-2;
   ctx.clearRect(0,0,sz,sz);
-  const total=segments.reduce((s,x)=>s+x.prob,0)||1;
   const n=segments.length;
+  // Visual: all slices have equal size regardless of probability
+  const sliceSize=(2*Math.PI)/n;
+  const sliceDegFixed=360/n;
   let angle=currentAngle-Math.PI/2;
   const imgs=await Promise.all(segments.map(s=>s.imgUrl?loadImg(s.imgUrl):Promise.resolve(null)));
 
   segments.forEach((seg,i)=>{
-    const slice=(seg.prob/total)*2*Math.PI;
-    const sliceDeg=(seg.prob/total)*360;
+    const slice=sliceSize;
+    const sliceDeg=sliceDegFixed;
 
     // Fill
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();
@@ -771,43 +776,37 @@ async function drawWheel(){
 function spinWheel(){
   if(isSpinning)return;
   isSpinning=true;document.getElementById('spinbtn').disabled=true;
+
+  const n=segments.length;
+  // ── PROBABILITY: select winner using configured probabilities ──
+  // (visual slices are uniform, but selection is weighted)
   const total=segments.reduce((s,x)=>s+x.prob,0)||1;
-
-  // Weighted random winner
   let rand=Math.random()*total,winIdx=0,cum=0;
-  for(let i=0;i<segments.length;i++){cum+=segments[i].prob;if(rand<cum){winIdx=i;break;}}
+  for(let i=0;i<n;i++){cum+=segments[i].prob;if(rand<cum){winIdx=i;break;}}
 
-  const slices=segments.map(s=>(s.prob/total)*2*Math.PI);
+  // ── VISUAL: all slices are uniform size ──
+  const sliceSize=(2*Math.PI)/n;
+  const sliceStart=winIdx*sliceSize;
 
-  // Calculate start angle of winning slice (offset from segment 0's start)
-  let sliceStart=0;
-  for(let i=0;i<winIdx;i++) sliceStart+=slices[i];
-  const sliceSize=slices[winIdx];
-
-  // Pick a random landing point INSIDE the slice (20% buffer from edges)
+  // Land inside the winning slice (20% buffer from edges)
   const buffer=sliceSize*0.20;
   const landOffset=buffer + Math.random()*(sliceSize - buffer*2);
 
   // ── ANGLE MATH ──
-  // In drawWheel, segment i starts at angle: (currentAngle - PI/2) + sum(slices[0..i-1])
-  // The pointer is fixed at -PI/2 in canvas coordinates (top).
-  // For the pointer to land at offset `landOffset` inside the winning slice:
-  //   (currentAngle - PI/2) + sliceStart + landOffset = -PI/2  (mod 2PI)
+  // In drawWheel, segment i starts at: (currentAngle - PI/2) + i*sliceSize
+  // The pointer sits at -PI/2 (top). For the pointer to land at landOffset inside winIdx:
+  //   currentAngle - PI/2 + sliceStart + landOffset = -PI/2  (mod 2PI)
   //   currentAngle = -(sliceStart + landOffset)  (mod 2PI)
   const targetMod = -(sliceStart + landOffset);
 
-  // Add full spins for drama, snap to the correct final angle
   const fullSpins=(7+Math.floor(Math.random()*4))*2*Math.PI;
-  // Normalize the difference between current and target to a positive value [0, 2PI)
   let diff = (targetMod - currentAngle) % (2*Math.PI);
   if(diff < 0) diff += 2*Math.PI;
   const target = currentAngle + fullSpins + diff;
 
-  // Longer duration for more suspense
   const dur=5000+Math.random()*2000;
   const t0=performance.now(),a0=currentAngle;
 
-  // Ease: fast start, slow dramatic ending
   function ease(t){
     if(t<0.7) return t/0.7*0.85;
     const t2=(t-0.7)/0.3;
