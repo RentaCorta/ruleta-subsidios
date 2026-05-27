@@ -40,7 +40,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 /* Logo SVG inline */
 .logo-svg-wrap{display:flex;align-items:center}
-.logo-svg-wrap svg{height:22px;width:auto}
+.logo-svg-wrap svg{height:36px;width:auto}
 
 /* Config icon button */
 .cfg-icon-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1.5px solid var(--gray2);background:var(--bg);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:var(--gray)}
@@ -49,12 +49,12 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 /* ══ GAME VIEW ══ */
 #game{align-items:center;justify-content:space-between}
-.game-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 4px;gap:14px;width:100%}
+.game-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 16px 16px;gap:24px;width:100%}
 
 /* Title block */
-.title-block{text-align:center;line-height:1}
-.title-line1{font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,5vw,42px);letter-spacing:3px;color:var(--navy);display:block}
-.title-line2{font-family:'DM Sans',sans-serif;font-size:clamp(12px,2vw,16px);font-weight:500;color:var(--blue);letter-spacing:.06em;display:block;margin-top:2px}
+.title-block{text-align:center;line-height:1;margin-bottom:4px}
+.title-line1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,5vw,48px);letter-spacing:3px;color:var(--navy);display:block}
+.title-line2{font-family:'DM Sans',sans-serif;font-size:clamp(13px,2vw,17px);font-weight:500;color:var(--blue);letter-spacing:.06em;display:block;margin-top:4px}
 
 /* Wheel frame */
 .wframe{position:relative;display:flex;align-items:center;justify-content:center}
@@ -64,22 +64,22 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #wcanvas{border-radius:50%;position:relative;z-index:2;display:block;box-shadow:0 4px 24px rgba(23,35,61,0.12)}
 
 /* Pointer */
-.ptr{position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(23,35,61,0.25))}
-.ptr-dot{width:18px;height:18px;background:var(--navy);border-radius:50%;border:3px solid #fff}
-.ptr-tri{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:20px solid var(--navy);margin-top:-1px}
+.ptr{position:absolute;top:-2px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 8px rgba(23,35,61,0.35))}
+.ptr-dot{width:20px;height:20px;background:#fff;border-radius:50%;border:3px solid var(--navy)}
+.ptr-tri{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:22px solid #fff;margin-top:-1px}
 
 /* Hub */
 .hub{position:absolute;width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid var(--navy);z-index:10;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(23,35,61,0.18)}
 .hub-in{width:24px;height:24px;border-radius:50%;background:var(--navy)}
 
 /* Spin button */
-.spinbtn{position:relative;padding:0;width:200px;height:58px;border:none;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent;transition:transform .12s}
+.spinbtn{position:relative;padding:0;width:220px;height:66px;border:none;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent;transition:transform .12s;margin-top:8px}
 .spinbtn:active:not(:disabled){transform:scale(.97)}
 .spinbtn:disabled{opacity:.35;cursor:not-allowed}
-.spinbtn-in{width:100%;height:100%;background:var(--navy);border-radius:29px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;box-shadow:0 4px 0 #0a1426,0 6px 20px rgba(23,35,61,0.22);transition:box-shadow .1s,transform .1s;position:relative;overflow:hidden}
+.spinbtn-in{width:100%;height:100%;background:var(--navy);border-radius:33px;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;box-shadow:0 5px 0 #0a1426,0 8px 24px rgba(23,35,61,0.22);transition:box-shadow .1s,transform .1s;position:relative;overflow:hidden}
 .spinbtn-in::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1) 0%,transparent 55%)}
-.spinbtn:active:not(:disabled) .spinbtn-in{box-shadow:0 1px 0 #0a1426,0 2px 8px rgba(23,35,61,0.2);transform:translateY(3px)}
-.spin-ico{width:18px;height:18px;stroke:#fff;stroke-width:2.5;fill:none}
+.spinbtn:active:not(:disabled) .spinbtn-in{box-shadow:0 1px 0 #0a1426,0 2px 8px rgba(23,35,61,0.2);transform:translateY(4px)}
+.spin-ico{width:20px;height:20px;stroke:#fff;stroke-width:2.5;fill:none}
 
 /* ══ CONFIG DRAWER ══ */
 #cfg-overlay{display:none;position:fixed;inset:0;z-index:50}
@@ -682,22 +682,53 @@ function spinWheel(){
   if(isSpinning)return;
   isSpinning=true;document.getElementById('spinbtn').disabled=true;
   const total=segments.reduce((s,x)=>s+x.prob,0)||1;
+
+  // Weighted random winner
   let rand=Math.random()*total,winIdx=0,cum=0;
   for(let i=0;i<segments.length;i++){cum+=segments[i].prob;if(rand<cum){winIdx=i;break;}}
+
   const slices=segments.map(s=>(s.prob/total)*2*Math.PI);
-  let sr=0;for(let i=0;i<winIdx;i++)sr+=slices[i];
-  const mid=sr+slices[winIdx]/2;
-  const desired=-Math.PI/2-mid;
-  const fullSpins=(6+Math.floor(Math.random()*4))*2*Math.PI;
+
+  // Calculate start angle of winning slice
+  let sliceStart=0;
+  for(let i=0;i<winIdx;i++) sliceStart+=slices[i];
+  const sliceSize=slices[winIdx];
+
+  // Land anywhere inside the slice EXCEPT near the borders (20% buffer each side)
+  // This guarantees the pointer is clearly inside the winner — never on an edge
+  const buffer=sliceSize*0.20;
+  const landOffset=buffer + Math.random()*(sliceSize - buffer*2);
+  const landAngle=sliceStart + landOffset;
+
+  // Pointer is at -PI/2 (top). We need: currentAngle + landAngle = -PI/2 (mod 2PI)
+  const pointerAt=-Math.PI/2;
+  const desired=pointerAt - landAngle;
+  const fullSpins=(7+Math.floor(Math.random()*4))*2*Math.PI; // 7-10 full spins for suspense
   const diff=((desired-currentAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
   const target=currentAngle+fullSpins+diff;
-  const dur=4500+Math.random()*1500;
+
+  // Longer duration for more suspense
+  const dur=5000+Math.random()*2000;
   const t0=performance.now(),a0=currentAngle;
-  function ease(t){return 1-Math.pow(1-t,4);}
+
+  // Ease: fast start, slow dramatic ending
+  function ease(t){
+    // Quartic ease-out with a slight hesitation near the end
+    if(t<0.7) return t/0.7*0.85; // fast phase
+    const t2=(t-0.7)/0.3;
+    return 0.85 + 0.15*(1-Math.pow(1-t2,4)); // slow dramatic landing
+  }
+
   function tick(now){
-    const p=Math.min((now-t0)/dur,1);currentAngle=a0+(target-a0)*ease(p);drawWheel();
+    const p=Math.min((now-t0)/dur,1);
+    currentAngle=a0+(target-a0)*ease(p);
+    drawWheel();
     if(p<1){requestAnimationFrame(tick);}
-    else{currentAngle=target;drawWheel();isSpinning=false;document.getElementById('spinbtn').disabled=false;setTimeout(()=>showResult(winIdx),350);}
+    else{
+      currentAngle=target;drawWheel();
+      isSpinning=false;document.getElementById('spinbtn').disabled=false;
+      setTimeout(()=>showResult(winIdx),400);
+    }
   }
   requestAnimationFrame(tick);
 }
