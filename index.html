@@ -631,43 +631,67 @@ async function drawWheel(){
     // Content
     ctx.save();ctx.translate(cx,cy);ctx.rotate(angle+slice/2);
     const img=imgs[i];
-    if(img&&!seg.isSiga&&sliceDeg>=22){
+    const hasImg=img&&!seg.isSiga&&sliceDeg>=22;
+
+    // Draw image thumbnail near outer edge
+    if(hasImg){
       const iSz=Math.min(sliceDeg<35?12:sliceDeg<50?16:19,19);
-      const iX=r*0.72;
+      const iX=r*0.76;
       ctx.save();ctx.beginPath();ctx.arc(iX,0,iSz,0,2*Math.PI);ctx.clip();
       ctx.drawImage(img,iX-iSz,-iSz,iSz*2,iSz*2);ctx.restore();
     }
-    ctx.rotate(Math.PI/2);
-    ctx.shadowColor='rgba(0,0,0,0.35)';ctx.shadowBlur=3;
-    ctx.fillStyle='#fff';
 
-    let fs=n<=6?13:n<=8?11:n<=10?9:7;
-    if(sliceDeg<25)fs=Math.max(fs-2,6);
+    // Text — always drawn, centered in the slice
+    ctx.rotate(Math.PI/2);
+    ctx.shadowColor='rgba(0,0,0,0.4)';ctx.shadowBlur=3;
+    ctx.fillStyle=seg.isSiga?'rgba(255,255,255,0.65)':'#fff';
+
+    // Font size: adaptive to segment count and slice size
+    let fs=n<=6?13:n<=8?12:n<=10?10:8;
+    if(sliceDeg<30) fs=Math.max(fs-1,7);
+    if(sliceDeg<20) fs=Math.max(fs-1,6);
     ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
 
+    // Parse emoji and text separately
     const emojiRx=/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu;
-    const raw=seg.label.replace(emojiRx,'').trim()||seg.label;
-    const emoji=seg.label.match(emojiRx)?.[0]||'';
-    const words=raw.split(' ').filter(Boolean);
+    const raw=seg.label.replace(emojiRx,'').trim();
+    const emoji=(seg.label.match(emojiRx)||[])[0]||'';
+    const textToDraw=raw||seg.label;
+
+    // Word wrap into max 2 lines
+    const words=textToDraw.split(' ').filter(Boolean);
     const half=Math.ceil(words.length/2);
-    let lines=words.length<=1?[raw]:[words.slice(0,half).join(' '),words.slice(half).join(' ')].filter(Boolean);
-    const maxTxtW=r*(sliceDeg<30?0.34:0.42);
-    lines=lines.map(l=>{let s=l;while(s.length>3&&ctx.measureText(s+'…').width>maxTxtW)s=s.slice(0,-1);return s!==l?s+'…':s;});
-    const lh=fs*1.3;
-    const hasEmoji=emoji&&!seg.isSiga&&sliceDeg>=32&&!img;
-    const hasImg2=img&&!seg.isSiga&&sliceDeg>=22;
-    const yOff=hasImg2?3:0;
-    const totalH=lines.length*lh;
-    if(hasEmoji){
-      const blockH=(fs+3)+totalH;let y=-blockH/2;
-      ctx.font=`${fs+3}px serif`;ctx.fillText(emoji,0,y+fs/2+1);y+=fs+4;
+    let lines=words.length<=1?[textToDraw]:[words.slice(0,half).join(' '),words.slice(half).join(' ')].filter(Boolean);
+
+    // Truncate lines that exceed slice width
+    const maxTxtW=r*(sliceDeg<28?0.32:sliceDeg<40?0.38:0.44);
+    lines=lines.map(l=>{
+      let s=l;
+      while(s.length>2&&ctx.measureText(s).width>maxTxtW) s=s.slice(0,-1);
+      return s!==l?s+'…':s;
+    });
+
+    const lh=fs*1.35;
+    const showEmoji=emoji&&!seg.isSiga&&!hasImg&&sliceDeg>=30;
+
+    if(showEmoji){
+      // Emoji on top + text below, all centered together
+      const eSz=fs+3;
+      const totalBlock=eSz+2+lines.length*lh;
+      let y=-totalBlock/2;
+      ctx.font=`${eSz}px serif`;
+      ctx.fillText(emoji,0,y+eSz/2);
+      y+=eSz+3;
       ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
       lines.forEach(l=>{ctx.fillText(l,0,y+lh/2);y+=lh;});
-    }else{
-      let y=yOff-totalH/2;
+    } else {
+      // Text only — perfectly centered in slice (no offset)
+      const totalH=lines.length*lh;
+      let y=-totalH/2;
       lines.forEach(l=>{ctx.fillText(l,0,y+lh/2);y+=lh;});
     }
+
     ctx.shadowBlur=0;ctx.restore();
     angle+=slice;
   });
