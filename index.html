@@ -159,23 +159,23 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .save-status.err{color:var(--red)}
 
 /* ══ RESULT OVERLAY ══ */
-#result{display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:20px}
+#result{display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:24px}
 #result.show{display:flex}
-.rbg{position:absolute;inset:0;background:rgba(23,35,61,0.65);backdrop-filter:blur(10px)}
-.rcard{position:relative;z-index:1;width:100%;max-width:340px;background:#fff;border:2px solid var(--gray2);border-radius:24px;padding:28px 22px 22px;text-align:center;animation:rIn .4s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shadow-lg)}
+.rbg{position:absolute;inset:0;background:rgba(23,35,61,0.7);backdrop-filter:blur(12px)}
+.rcard{position:relative;z-index:1;width:100%;max-width:580px;background:#fff;border:3px solid var(--gray2);border-radius:32px;padding:48px 44px 36px;text-align:center;animation:rIn .4s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shadow-lg)}
 .rcard.siga{border-color:var(--gray2)}
 .rcard.win{border-color:var(--navy)}
 @keyframes rIn{from{transform:scale(.7) translateY(30px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
-.rimg-wrap{width:100px;height:100px;border-radius:16px;overflow:hidden;margin:0 auto 14px;border:2px solid var(--gray2);background:var(--gray3)}
+.rimg-wrap{width:200px;height:200px;border-radius:24px;overflow:hidden;margin:0 auto 24px;border:3px solid var(--gray2);background:var(--gray3);box-shadow:0 8px 24px rgba(23,35,61,0.15)}
 .rimg-wrap img{width:100%;height:100%;object-fit:cover}
-.rburst{font-size:52px;line-height:1;margin-bottom:10px;animation:burst .5s .15s both}
+.rburst{font-size:88px;line-height:1;margin-bottom:16px;animation:burst .5s .15s both}
 @keyframes burst{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-.reye{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:5px}
+.reye{font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:10px}
 .reye.se{color:var(--gray)}
-.rprize{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--navy);line-height:1.15;margin-bottom:22px}
-.rprize.st{font-size:24px;color:var(--gray)}
-.rdiv{height:1.5px;background:var(--gray2);margin-bottom:16px}
-.rbtn-again{width:100%;padding:14px;background:var(--navy);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;border:none;border-radius:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s,background .15s;box-shadow:0 3px 0 #0a1426}
+.rprize{font-family:'Bebas Neue',sans-serif;font-size:54px;letter-spacing:1.5px;color:var(--navy);line-height:1.1;margin-bottom:36px}
+.rprize.st{font-size:42px;color:var(--gray)}
+.rdiv{height:1.5px;background:var(--gray2);margin-bottom:24px}
+.rbtn-again{width:100%;padding:22px;background:var(--navy);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;border:none;border-radius:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s,background .15s;box-shadow:0 5px 0 #0a1426}
 .rbtn-again:active{transform:scale(.98)}
 
 /* confetti */
@@ -620,7 +620,18 @@ function loadImg(url){
 async function drawWheel(){
   const canvas=document.getElementById('wcanvas');if(!canvas)return;
   const ctx=canvas.getContext('2d');
-  const sz=wheelSize;canvas.width=sz;canvas.height=sz;
+  const sz=wheelSize;
+  // HiDPI/Retina scaling — render at device pixel ratio for sharp text
+  const dpr=Math.max(window.devicePixelRatio||1, 2);
+  canvas.width=sz*dpr;
+  canvas.height=sz*dpr;
+  canvas.style.width=sz+'px';
+  canvas.style.height=sz+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // Better text rendering
+  ctx.textRendering='optimizeLegibility';
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
   const cx=sz/2,cy=sz/2,r=cx-2;
   ctx.clearRect(0,0,sz,sz);
   const total=segments.reduce((s,x)=>s+x.prob,0)||1;
@@ -680,9 +691,9 @@ async function drawWheel(){
     const textToDraw=raw||seg.label;
 
     // Available radial space for text
-    // From r*0.18 (inner, hub edge) to r*(hasImg?0.66:0.92)
-    const innerEdge=r*0.18;
-    const outerEdge=r*(hasImg?0.66:0.92);
+    // Push text closer to the outer edge for better readability
+    const innerEdge=r*0.40;
+    const outerEdge=r*(hasImg?0.72:0.94);
     const textZone=outerEdge-innerEdge;
     const textCenter=(innerEdge+outerEdge)/2;
 
@@ -732,13 +743,13 @@ async function drawWheel(){
     // After rotating PI/2, that radial is now along -Y direction.
 
     if(showEmoji){
-      const eSz=fs+4;
-      const totalBlock=eSz+3+lines.length*lh;
+      const eSz=fs+5;
+      const totalBlock=eSz+4+lines.length*lh;
       // Center the whole block on textCenter; -Y is outward
       let y=-textCenter-totalBlock/2;
-      ctx.font=`${eSz}px serif`;
+      ctx.font=`${eSz}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
       ctx.fillText(emoji,0,y+eSz/2);
-      y+=eSz+3;
+      y+=eSz+4;
       ctx.font=`700 ${fs}px 'DM Sans',sans-serif`;
       lines.forEach(l=>{ctx.fillText(l,0,y+lh/2);y+=lh;});
     } else {
